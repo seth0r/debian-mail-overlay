@@ -41,8 +41,6 @@ ARG BUILD_DEPS=" \
     libmagic-dev" 
 RUN apt-get update
 RUN apt-get install -y -q --no-install-recommends \
-    ${BUILD_DEPS}
-RUN apt-get install -y -q --no-install-recommends \
     libevent-2.1-6 \
     libglib2.0-0 \
     libssl1.1 \
@@ -58,6 +56,8 @@ RUN apt-get install -y -q --no-install-recommends \
     gnupg \
     dirmngr \
     netcat
+RUN apt-get install -y -q --no-install-recommends \
+    ${BUILD_DEPS}
 RUN cd /tmp \
  && SKALIBS_TARBALL="skalibs-${SKALIBS_VER}.tar.gz" \
  && wget -q https://skarnet.org/software/skalibs/${SKALIBS_TARBALL} \
