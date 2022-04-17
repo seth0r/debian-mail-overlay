@@ -39,8 +39,10 @@ ARG BUILD_DEPS=" \
     libhyperscan-dev \
     libjemalloc-dev \
     libmagic-dev" 
-RUN apt-get update && apt-get install -y -q --no-install-recommends \
-    ${BUILD_DEPS} \
+RUN apt-get update
+RUN apt-get install -y -q --no-install-recommends \
+    ${BUILD_DEPS}
+RUN apt-get install -y -q --no-install-recommends \
     libevent-2.1-6 \
     libglib2.0-0 \
     libssl1.1 \
