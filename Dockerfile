@@ -1,7 +1,7 @@
 FROM debian:buster-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG NB_CORES=4
+ARG BUILD_CORES
 
 ARG SKALIBS_VER=2.11.2.0
 ARG EXECLINE_VER=2.8.3.0
@@ -22,7 +22,8 @@ LABEL description="s6 + rspamd image based on Debian" \
 
 ENV LC_ALL=C
 
-ARG BUILD_DEPS=" \
+RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
+    && BUILD_DEPS=" \
     cmake \
     gcc \
     make \
@@ -38,8 +39,8 @@ ARG BUILD_DEPS=" \
     libssl-dev \
     libhyperscan-dev \
     libjemalloc-dev \
-    libmagic-dev" 
-RUN apt-get update && apt-get install -y -q --no-install-recommends \
+    libmagic-dev" \
+ && apt-get update && apt-get install -y -q --no-install-recommends \
     ${BUILD_DEPS} \
     libevent-2.1-6 \
     libglib2.0-0 \
@@ -55,16 +56,16 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
     ca-certificates \
     gnupg \
     dirmngr \
-    netcat
-RUN cd /tmp \
+    netcat \
+ && cd /tmp \
  && SKALIBS_TARBALL="skalibs-${SKALIBS_VER}.tar.gz" \
  && wget -q https://skarnet.org/software/skalibs/${SKALIBS_TARBALL} \
  && CHECKSUM=$(sha256sum ${SKALIBS_TARBALL} | awk '{print $1}') \
  && if [ "${CHECKSUM}" != "${SKALIBS_SHA256_HASH}" ]; then echo "${SKALIBS_TARBALL} : bad checksum" && exit 1; fi \
  && tar xzf ${SKALIBS_TARBALL} && cd skalibs-${SKALIBS_VER} \
  && ./configure --prefix=/usr --datadir=/etc \
- && make && make install
-RUN cd /tmp \
+ && make && make install \
+ && cd /tmp \
  && EXECLINE_TARBALL="execline-${EXECLINE_VER}.tar.gz" \
  && wget -q https://skarnet.org/software/execline/${EXECLINE_TARBALL} \
  && CHECKSUM=$(sha256sum ${EXECLINE_TARBALL} | awk '{print $1}') \
@@ -79,8 +80,8 @@ RUN cd /tmp \
  && if [ "${CHECKSUM}" != "${S6_SHA256_HASH}" ]; then echo "${S6_TARBALL} : bad checksum" && exit 1; fi \
  && tar xzf ${S6_TARBALL} && cd s6-${S6_VER} \
  && ./configure --prefix=/usr --bindir=/usr/bin --sbindir=/usr/sbin \
- && make && make install
-RUN cd /tmp \
+ && make && make install \
+ && cd /tmp \
  && RSPAMD_TARBALL="${RSPAMD_VER}.tar.gz" \
  && wget -q https://github.com/vstakhov/rspamd/archive/${RSPAMD_TARBALL} \
  && CHECKSUM=$(sha256sum ${RSPAMD_TARBALL} | awk '{print $1}') \
@@ -105,15 +106,15 @@ RUN cd /tmp \
     -DJEMALLOC_ROOT_DIR=/jemalloc \
     . \
  && make -j${NB_CORES} \
- && make install
-RUN cd /tmp \
+ && make install \
+ && cd /tmp \
  && GUCCI_BINARY="gucci-v${GUCCI_VER}-linux-amd64" \
  && wget -q https://github.com/noqcks/gucci/releases/download/${GUCCI_VER}/${GUCCI_BINARY} \
  && CHECKSUM=$(sha256sum ${GUCCI_BINARY} | awk '{print $1}') \
  && if [ "${CHECKSUM}" != "${GUCCI_SHA256_HASH}" ]; then echo "${GUCCI_BINARY} : bad checksum" && exit 1; fi \
  && chmod +x ${GUCCI_BINARY} \
- && mv ${GUCCI_BINARY} /usr/local/bin/gucci
-RUN apt-get purge -y ${BUILD_DEPS} \
+ && mv ${GUCCI_BINARY} /usr/local/bin/gucci \
+ && apt-get purge -y ${BUILD_DEPS} \
  && apt-get autoremove -y \
  && apt-get clean \
  && rm -rf /tmp/* /var/lib/apt/lists/* /var/cache/debconf/*-old
